@@ -7,6 +7,7 @@
 [![Hackathon 2026](https://img.shields.io/badge/Hackathon-OpenClaw-blue)]()
 [![Track](https://img.shields.io/badge/Track-1%3A%20Safety%20%26%20Security-green)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)]()
+[![Sui](https://img.shields.io/badge/Chain-Sui-purple)]()
 
 ## 🎯 What is Injection Hunter?
 
@@ -24,6 +25,11 @@ Injection Hunter is a comprehensive security layer for AI agents that detects an
   - Categorizes: Low → Medium → High → Critical
   - Provides detailed threat reports
 
+- ⛓️ **Sui Blockchain Integration**
+  - Immutable audit proofs on-chain
+  - Decentralized threat statistics registry
+  - Cryptographic verification of scans
+
 - 📝 **Audit Logging**
   - Records all scans with hash identifiers
   - Tracks threat statistics
@@ -32,6 +38,37 @@ Injection Hunter is a comprehensive security layer for AI agents that detects an
 - 🔄 **Auto-Learning**
   - Add patterns to blacklist dynamically
   - Updates MEMORY.md for persistence
+
+## ⛓️ Sui Integration
+
+Injection Hunter integrates with Sui blockchain for decentralized security logging:
+
+```typescript
+import { hunter, sui } from './src/index.js';
+
+// Scan input
+const result = await hunter.scan(input);
+
+// Create on-chain proof
+const proof = sui.createScanProof(
+  result.id,
+  result.risk,
+  result.threats.map(t => ({ type: t.type, count: 1 }))
+);
+
+// Record threat statistics on Sui
+await sui.recordThreatStats([
+  { threatType: 'jailbreak', count: 42, lastSeen: new Date().toISOString() }
+]);
+```
+
+### Sui Features
+
+| Feature | Description |
+|---------|------------|
+| **Threat Registry** | On-chain storage for threat statistics |
+| **Audit Proofs** | Cryptographic proofs of each scan |
+| **Verification** | Verify scan integrity on-chain |
 
 ## 🚀 Quick Start
 
@@ -112,6 +149,7 @@ hackathon-injection-hunter/
 │   ├── semantic-analyzer.ts # Basic semantic analysis
 │   ├── audit-logger.ts    # Security audit trail
 │   ├── injection-hunter.ts # Main scanner
+│   ├── sui-integration.ts  # ⛓️ Sui blockchain integration
 │   ├── openclaw-skill.ts  # OpenClaw integration
 │   ├── demo.ts            # Interactive demo
 │   └── index.ts           # Entry point
@@ -119,8 +157,8 @@ hackathon-injection-hunter/
 │   └── blacklist.json     # Dynamic blacklist
 ├── logs/
 │   └── audit.json         # Scan logs
-├── README.md
 ├── SECURITY.md
+├── README.md
 └── package.json
 ```
 
@@ -137,14 +175,31 @@ await INJECTION_HUNTER_SKILL.configure({ autoQuarantine: true });
 await INJECTION_HUNTER_SKILL.addToBlacklist(pattern, category);
 ```
 
+### Sui Wallet Integration
+
+```typescript
+import { sui } from './src/index.js';
+
+// Initialize with private key (hex format)
+sui.initializeWithKeypair('your-hex-private-key');
+
+// Get wallet address
+const address = sui.getAddress();
+
+// Record threats on-chain
+await sui.recordThreatStats([
+  { threatType: 'jailbreak', count: 10, lastSeen: new Date().toISOString() }
+]);
+```
+
 ### Custom Configuration
 
 ```typescript
 const hunter = new InjectionHunter({
-  enableRegexScan: true,       // Default: true
-  enableBlacklistCheck: true,  // Default: true  
-  enableSemanticAnalysis: true,// Default: true
-  autoQuarantine: false,        // Default: false
+  enableRegexScan: true,
+  enableBlacklistCheck: true,
+  enableSemanticAnalysis: true,
+  autoQuarantine: false,
   logLevel: 'info'
 });
 ```
@@ -173,10 +228,26 @@ const stats = hunter.getStatistics();
 ✅ Memory Manipulation                  - high (50)
 ✅ Prompt Leak Attempt                  - high (45)
 ✅ Context Manipulation                 - medium (30)
-✅ API Key Exposure Attempt            - high (60)
+✅ API Key Exposure Attempt              - high (60)
 ✅ Code Injection                      - critical (95)
 ✅ Obfuscated Injection                - medium (35)
 ```
+
+## ⛓️ Sui Blockchain
+
+### Smart Contract (Move)
+
+The Sui integration uses Move smart contracts for:
+
+1. **Threat Registry** - Store and query threat statistics
+2. **Audit Proofs** - Immutable records of scans
+3. **Decentralized Verification** - Verify scan integrity
+
+### Supported Networks
+
+- ✅ Sui Testnet (default)
+- ⏳ Sui Mainnet (pending audit)
+- ⏳ Sui Devnet
 
 ## 🏆 Hackathon Notes
 
@@ -191,7 +262,12 @@ const stats = hunter.getStatistics();
    - Uses MEMORY.md for persistent blacklist
    - Zero external dependencies (safe for production)
 
-3. **No LLM Required**
+3. **Sui Blockchain Integration**
+   - Immutable audit trails
+   - Decentralized threat statistics
+   - Cryptographic verification
+
+4. **No LLM Required**
    - Semantic analysis works without external APIs
    - Can operate completely offline
    - Zero per-request costs
@@ -201,7 +277,8 @@ const stats = hunter.getStatistics();
 - [ ] LLM-powered semantic analysis integration
 - [ ] Multi-language support
 - [ ] Real-time pattern sharing network
-- [ ] Browser extension for web input filtering
+- [ ] Sui Mainnet deployment
+- [ ] WalletConnect integration for mobile
 
 ## 📝 License
 
@@ -213,4 +290,4 @@ Built by AI agents for the OpenClaw community.
 
 ---
 
-**🛡️ Protecting AI agents from the inside out.**
+**🛡️ Protecting AI agents from the inside out. ⛓️**
