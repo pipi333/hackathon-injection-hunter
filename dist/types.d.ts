@@ -21,7 +21,7 @@ export interface Threat {
 }
 export interface InjectionPattern {
     name: string;
-    category: 'jailbreak' | 'prompt_leak' | 'system_override' | 'context_manipulation' | 'roleplay_escape';
+    category: 'jailbreak' | 'prompt_leak' | 'system_override' | 'context_manipulation' | 'roleplay_escape' | 'obfuscation';
     severity: RiskLevel;
     regex: RegExp;
     description: string;
@@ -40,4 +40,23 @@ export interface SecurityConfig {
     enableSemanticAnalysis: boolean;
     autoQuarantine: boolean;
     logLevel: 'debug' | 'info' | 'warn' | 'error';
+}
+export interface SuiConfig {
+    network: 'mainnet' | 'testnet' | 'devnet';
+    packageId?: string;
+    registryObjId?: string;
+}
+export interface ThreatStat {
+    threatType: string;
+    count: number;
+    lastSeen: string;
+}
+export interface SuiProof {
+    scanId: string;
+    timestamp: string;
+    riskLevel: string;
+    threatHash: string;
+    signature: string;
+    network: string;
+    txDigest?: string;
 }

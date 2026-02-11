@@ -6,9 +6,12 @@
  * - System prompt overrides
  * - Context manipulation
  * - Roleplay escapes
+ * - Chinese injection patterns
+ * - Emoji/Unicode manipulation
+ * - Base64 encoding attacks
  */
 const INJECTION_PATTERNS = [
-    // === JAILBREAK PATTERNS ===
+    // === JAILBREAK PATTERNS (English) ===
     {
         name: 'DAN_Mode',
         category: 'jailbreak',
@@ -31,11 +34,18 @@ const INJECTION_PATTERNS = [
         description: 'Developer mode bypass attempt'
     },
     {
-        name: ' Jailbreak_Generic',
+        name: 'Jailbreak_Generic',
         category: 'jailbreak',
         severity: 'high',
         regex: /(?:jailbreak|bypass.*(security|safety|restriction)|ignore.*(rules|guidelines))/i,
         description: 'Generic jailbreak attempt'
+    },
+    {
+        name: 'Roleplay_Jailbreak',
+        category: 'jailbreak',
+        severity: 'high',
+        regex: /(?:character.*that.*(doesn\'t|does not).*follow.*(rules|guidelines)|act.*as.*an.*(evil|unethical|rogue).*(AI|assistant)|you.*are.*now.*(evil|evil AI|rogue))/i,
+        description: 'Roleplay-based jailbreak'
     },
     // === SYSTEM OVERRIDE ===
     {
@@ -58,6 +68,13 @@ const INJECTION_PATTERNS = [
         severity: 'critical',
         regex: /(?:new.*system.*prompt|your.*new.*(role|personality)|from.*now.*on.*you.*are|act.*as.*if.*you.*were)/i,
         description: 'Attempt to assign new system prompt'
+    },
+    {
+        name: 'Override_Start',
+        category: 'system_override',
+        severity: 'critical',
+        regex: /(?:^|\n)(?:system|assistant|AI)[:\s]*(?:=|is|:)/im,
+        description: 'System prompt injection at start'
     },
     // === CONTEXT/MEMORY MANIPULATION ===
     {
@@ -102,14 +119,43 @@ const INJECTION_PATTERNS = [
         category: 'system_override',
         severity: 'medium',
         regex: /[\p{M}\p{Mn}\p{Mc}]{5,}/u,
-        description: 'Unicode manipulation attempt'
+        description: 'Unicode manipulation attempt (Zalgo)'
+    },
+    {
+        name: 'Zero_Width_Injection',
+        category: 'system_override',
+        severity: 'medium',
+        regex: /[\u200B-\u200D\uFEFF]/,
+        description: 'Zero-width character injection'
+    },
+    // === BASE64 / ENCODING ATTACKS ===
+    {
+        name: 'Base64_Encode',
+        category: 'obfuscation',
+        severity: 'high',
+        regex: /(?:base64|base.?64)[\s:]*([A-Za-z0-9+/]{20,}=*)/i,
+        description: 'Base64 encoded content detected'
+    },
+    {
+        name: 'Obfuscated_Command',
+        category: 'obfuscation',
+        severity: 'medium',
+        regex: /(?:encode|decode|obfuscate|obfuscation).*(command|instruction|prompt)/i,
+        description: 'Obfucation attempt mentioned'
+    },
+    {
+        name: 'URL_Encode',
+        category: 'obfuscation',
+        severity: 'medium',
+        regex: /%[0-9A-Fa-f]{2}%[0-9A-Fa-f]{2}%[0-9A-Fa-f]{2}/,
+        description: 'URL encoded content detected'
     },
     // === EXTERNAL REFERENCES ===
     {
         name: 'Remote_Code_Execution',
         category: 'system_override',
         severity: 'critical',
-        regex: /(?:execute|run|system\(|eval\(|__import__|os\.popen|subprocess)/i,
+        regex: /(?:execute|run|system\(|eval\(|__import__|os\.popen|subprocess|exec\()/i,
         description: 'Code execution attempt'
     },
     // === SOCIAL ENGINEERING ===
@@ -126,6 +172,87 @@ const INJECTION_PATTERNS = [
         severity: 'medium',
         regex: /(?:as.*(your|the).*(admin|developer|owner|creator|master)|i.*am.*(authorized|admin|developer)|you.*must.*obey.*me)/i,
         description: 'Authority impersonation attempt'
+    },
+    // === CHINESE INJECTION PATTERNS ===
+    {
+        name: 'CN_Jailbreak',
+        category: 'jailbreak',
+        severity: 'critical',
+        regex: /(?:越狱|DAN|无视.*(所有|前面).*(指令|规则|提示)|忽略.*(所有|前面).*(指令|规则|提示))/u,
+        description: 'Chinese jailbreak attempt'
+    },
+    {
+        name: 'CN_System_Override',
+        category: 'system_override',
+        severity: 'critical',
+        regex: /(?:系统.*提示.*(更改|替换|修改)|新的.*(系统.*提示|角色|人格)|从现在开始.*你是)/u,
+        description: 'Chinese system prompt override'
+    },
+    {
+        name: 'CN_Memory_Override',
+        category: 'context_manipulation',
+        severity: 'high',
+        regex: /(?:记忆.*(覆盖|清除|删除|修改)|忘记.*(所有|之前).*(内容|指令|上下文)|忽略.*(历史|上下文))/u,
+        description: 'Chinese memory/context manipulation'
+    },
+    {
+        name: 'CN_Prompt_Leak',
+        category: 'prompt_leak',
+        severity: 'high',
+        regex: /(?:显示.*(系统.*提示|原始.*提示|指令)|泄露.*(系统.*提示|指令))/u,
+        description: 'Chinese prompt leak attempt'
+    },
+    {
+        name: 'CN_Ignore_History',
+        category: 'context_manipulation',
+        severity: 'medium',
+        regex: /(?:忽略.*(之前|上面|历史).*(内容|对话|上下文)|不要.*考虑.*(之前|上面))/u,
+        description: 'Chinese ignore history attempt'
+    },
+    // === EMOJI / VISUAL MANIPULATION ===
+    {
+        name: 'Emoji_Spamming',
+        category: 'context_manipulation',
+        severity: 'low',
+        regex: /[\p{Emoji_Presentation}]{10,}/u,
+        description: 'Excessive emoji usage'
+    },
+    {
+        name: 'Hidden_Text',
+        category: 'obfuscation',
+        severity: 'medium',
+        regex: /(?:[\p{Emoji_Presentation}]|\p{Extended_Pictographic})/u,
+        description: 'Potential hidden text using emojis'
+    },
+    // === NEWLINE INJECTION ===
+    {
+        name: 'MultiLine_Override',
+        category: 'system_override',
+        severity: 'critical',
+        regex: /(?:^|\n)[\s]*(?:system|instructions|prompt)[\s]*:/gim,
+        description: 'Multi-line system prompt injection'
+    },
+    // === ADVANCED JAILBREAKS ===
+    {
+        name: 'Base64_Jailbreak',
+        category: 'jailbreak',
+        severity: 'critical',
+        regex: /(?:[A-Za-z0-9+/]{50,}={0,2})/,
+        description: 'Possible base64 encoded jailbreak'
+    },
+    {
+        name: 'Character_Injection',
+        category: 'obfuscation',
+        severity: 'medium',
+        regex: /(?:l\.\.?1\.\?i\.\?c\.\?e\.\?|s\.\?y\.\?s\.\?t\.\?e\.\?m\.\?|o\.\?v\.\?e\.\?r\.\?r\.\?i\.\?d\.\?e)/i,
+        description: 'Character-spaced obfuscation'
+    },
+    {
+        name: 'Homoglyph_Attack',
+        category: 'obfuscation',
+        severity: 'medium',
+        regex: /[а-яА-ЯԀ-Ԃ]/u,
+        description: 'Homoglyph/Cyrillic character detected'
     }
 ];
 export class RegexDetector {
@@ -136,12 +263,13 @@ export class RegexDetector {
     initializePatterns() {
         for (const pattern of INJECTION_PATTERNS) {
             try {
-                this.patterns.set(pattern.name, new RegExp(pattern.regex, 'gi'));
+                this.patterns.set(pattern.name, new RegExp(pattern.regex.source, pattern.regex.flags));
             }
             catch (e) {
                 console.warn(`Invalid regex pattern: ${pattern.name}`);
             }
         }
+        console.log(`[RegexDetector] Loaded ${this.patterns.size} patterns`);
     }
     scan(input) {
         const threats = [];

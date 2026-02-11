@@ -5,7 +5,32 @@
  * for prompt injection attacks before processing.
  */
 
-import { InjectionHunter, hunter } from './index.js';
+import { InjectionHunter } from './injection-hunter.js';
+import { SuiIntegration } from './sui-integration.js';
+
+// Create singleton instances
+let hunterInstance: InjectionHunter | null = null;
+let suiInstance: SuiIntegration | null = null;
+
+function getHunter(): InjectionHunter {
+  if (!hunterInstance) {
+    hunterInstance = new InjectionHunter({
+      enableRegexScan: true,
+      enableBlacklistCheck: true,
+      enableSemanticAnalysis: true,
+      autoQuarantine: false,
+      logLevel: 'info'
+    });
+  }
+  return hunterInstance;
+}
+
+function getSui(): SuiIntegration {
+  if (!suiInstance) {
+    suiInstance = new SuiIntegration();
+  }
+  return suiInstance;
+}
 
 const INJECTION_HUNTER_SKILL = {
   name: 'injection-hunter',
@@ -23,6 +48,7 @@ const INJECTION_HUNTER_SKILL = {
   },
   
   async scan(input: string, autoQuarantine: boolean = false) {
+    const hunter = getHunter();
     const { result, quarantined } = await hunter.scanAndQuarantine(input);
     
     return {
@@ -51,15 +77,15 @@ const INJECTION_HUNTER_SKILL = {
   },
   
   getStatistics() {
-    return hunter.getStatistics();
+    return getHunter().getStatistics();
   },
   
   addToBlacklist(pattern: string, category: string) {
-    return hunter.addToBlacklist(pattern, category, 'openclaw-agent');
+    return getHunter().addToBlacklist(pattern, category, 'openclaw-agent');
   },
   
   getLogs(limit: number = 50) {
-    return hunter.getLogs(limit);
+    return getHunter().getLogs(limit);
   },
   
   configure(options: {
@@ -68,7 +94,7 @@ const INJECTION_HUNTER_SKILL = {
     enableSemantic?: boolean;
     autoQuarantine?: boolean;
   }) {
-    hunter.updateConfig({
+    getHunter().updateConfig({
       enableRegexScan: options.enableRegex ?? true,
       enableBlacklistCheck: options.enableBlacklist ?? true,
       enableSemanticAnalysis: options.enableSemantic ?? true,
@@ -76,6 +102,31 @@ const INJECTION_HUNTER_SKILL = {
     });
     
     return { success: true, message: 'Configuration updated' };
+  },
+  
+  // Sui blockchain integration methods
+  async createOnChainProof(scanResult: {
+    risk: string;
+    score: number;
+    threats: { type: string; count: number }[];
+  }) {
+    const sui = getSui();
+    const proof = sui.createScanProof(
+      `scan_${Date.now()}`,
+      scanResult.risk,
+      scanResult.threats
+    );
+    
+    return {
+      success: true,
+      proof,
+      message: 'Proof created. Submit to Sui blockchain to finalize.'
+    };
+  },
+  
+  async verifyOnChainProof(proofId: string) {
+    const sui = getSui();
+    return sui.getProofFromChain(proofId);
   }
 };
 

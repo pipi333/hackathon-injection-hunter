@@ -46,5 +46,23 @@ declare const INJECTION_HUNTER_SKILL: {
         success: boolean;
         message: string;
     };
+    createOnChainProof(scanResult: {
+        risk: string;
+        score: number;
+        threats: {
+            type: string;
+            count: number;
+        }[];
+    }): Promise<{
+        success: boolean;
+        proof: import("./sui-integration.js").SuiProof;
+        message: string;
+    }>;
+    verifyOnChainProof(proofId: string): Promise<{
+        found: boolean;
+        proof?: import("./sui-integration.js").SuiProof;
+        timestamp?: string;
+        onChain: boolean;
+    }>;
 };
 export default INJECTION_HUNTER_SKILL;

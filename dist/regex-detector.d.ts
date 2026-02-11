@@ -6,6 +6,9 @@
  * - System prompt overrides
  * - Context manipulation
  * - Roleplay escapes
+ * - Chinese injection patterns
+ * - Emoji/Unicode manipulation
+ * - Base64 encoding attacks
  */
 import type { Threat } from './types.js';
 export declare class RegexDetector {
