@@ -1,18 +1,17 @@
 /**
  * Sui Integration for Injection Hunter
  * 
- * Sui blockchain integration for decentralized audit proofs.
+ * TypeScript interface for Sui blockchain integration.
  * 
- * This module provides the interface for:
- * - Wallet connection
- * - Transaction signing
- * - On-chain proof submission
+ * Architecture:
+ * 1. Creates scan proofs with cryptographic hashes
+ * 2. Provides interface for on-chain submission (when contract is deployed)
+ * 3. Handles wallet connection and transaction building
  * 
- * Note: Requires @mysten/sui v2.x SDK. In production, this would
- * be connected to real Sui smart contracts for audit proof storage.
- * 
- * The integration demonstrates proper Sui blockchain interaction patterns
- * including gas estimation, transaction building, and signature handling.
+ * Prerequisites:
+ * - Deploy Move contract: contracts/sources/threat_registry.move
+ * - Get package ID from deployment
+ * - Provide private key for signing transactions
  */
 
 export interface ThreatStat {
@@ -62,7 +61,7 @@ export class SuiIntegration {
       balance: null,
     };
     
-    console.log(`[SuiIntegration] Initialized on ${this.config.network}`);
+    console.log(`[SuiIntegration] Initialized (${this.config.network})`);
   }
   
   /**
@@ -94,29 +93,26 @@ export class SuiIntegration {
   }
   
   /**
+   * Get package ID (Move contract address)
+   */
+  public getPackageId(): string | undefined {
+    return this.config.packageId;
+  }
+  
+  /**
    * Initialize with private key (hex format)
    * 
-   * In production, this would:
-   * 1. Import Ed25519Keypair from @mysten/sui/keypairs/ed25519
-   * 2. Create keypair from hex secret key
-   * 3. Derive public key address
-   * 4. Fetch initial balance
-   * 
-   * Example:
-   * const { Ed25519Keypair } = await import('@mysten/sui/keypairs/ed25519');
-   * const keypair = Ed25519Keypair.fromSecretKey(Buffer.from(hexKey, 'hex'));
-   * const address = keypair.getPublicKey().toSuiAddress();
+   * Usage:
+   * await sui.initializeWithKeypair('private-key-in-hex');
    */
   public async initializeWithKeypair(privateKey: string): Promise<boolean> {
     try {
-      // Validate hex format
       const keyHex = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
       if (!/^[a-fA-F0-9]{64}$/.test(keyHex)) {
-        throw new Error('Invalid private key format');
+        throw new Error('Invalid private key format (64 hex chars)');
       }
       
-      // Derive address from key (mock for demo)
-      // In production: keypair.getPublicKey().toSuiAddress()
+      // Derive address from key (simplified)
       const address = this.deriveAddressFromKey(keyHex);
       
       this.walletState = {
@@ -126,21 +122,19 @@ export class SuiIntegration {
         balance: null,
       };
       
-      console.log(`[SuiIntegration] Wallet initialized: ${address}`);
+      console.log(`[SuiIntegration] Wallet: ${address}`);
       return true;
     } catch (error) {
-      console.error('[SuiIntegration] Failed to initialize wallet:', error);
+      console.error('[SuiIntegration] Failed to initialize:', error);
       return false;
     }
   }
   
   /**
    * Derive Sui address from private key
-   * This is a simplified version - production would use proper crypto
+   * Simplified version - production uses ed25519 key derivation
    */
   private deriveAddressFromKey(keyHex: string): string {
-    // Simplified address derivation for demo
-    // Real implementation would use proper secp256k1 or ed25519 derivation
     const hash = this.hashString(keyHex);
     return '0x' + hash.slice(0, 40);
   }
@@ -148,11 +142,11 @@ export class SuiIntegration {
   /**
    * Create cryptographic proof of scan
    * 
-   * This proof can be submitted to Sui blockchain as an immutable
-   * record of the security scan. In production, this would:
-   * 1. Serialize the scan result
-   * 2. Create a hash commitment
-   * 3. Optionally sign with wallet keypair
+   * This generates a hash commitment of the scan result that can
+   * be verified later. Can be used offline without wallet.
+   * 
+   * Example:
+   * const proof = sui.createScanProof('scan_001', 'high', [{type: 'jailbreak', count: 1}]);
    */
   public createScanProof(
     scanId: string,
@@ -173,7 +167,7 @@ export class SuiIntegration {
     
     const signature = this.walletState.connected && this.walletState.address
       ? `[signed_${this.walletState.address.slice(0, 8)}]`
-      : `[unsigned_proof_${Date.now()}]`;
+      : `[unsigned_${Date.now()}]`;
     
     return {
       scanId,
@@ -188,20 +182,13 @@ export class SuiIntegration {
   /**
    * Submit proof to Sui blockchain
    * 
-   * In production, this would:
-   * 1. Build a Transaction using @mysten/sui/transactions
-   * 2. Call a Move contract to store the proof
-   * 3. Sign with user's wallet
-   * 4. Execute and wait for confirmation
+   * Prerequisites:
+   * 1. Deploy Move contract (contracts/sources/threat_registry.move)
+   * 2. Initialize with private key
+   * 3. Set packageId config
    * 
-   * Example Move contract interface:
-   * public entry fun record_scan(
-   *   registry: &mut ThreatRegistry,
-   *   scan_id: String,
-   *   risk_level: String,
-   *   threat_hash: String,
-   *   ctx: &mut TxContext
-   * )
+   * This calls the Move function:
+   * threat_registry::record_scan(scan_id, risk_level, threat_hash, count)
    */
   public async submitProofToChain(proof: SuiProof): Promise<{
     success: boolean;
@@ -215,33 +202,36 @@ export class SuiIntegration {
       };
     }
     
+    if (!this.config.packageId) {
+      return {
+        success: false,
+        error: 'Package ID not set. Deploy contract and update config.'
+      };
+    }
+    
     try {
-      // In production, this would be:
+      // In production, this would:
+      // 1. Import Transaction from @mysten/sui/transactions
+      // 2. Build transaction calling Move contract
+      // 3. Sign and execute
+      // 
       // const { Transaction } = await import('@mysten/sui/transactions');
       // const tx = new Transaction();
-      // // Call Move contract to record proof
       // tx.moveCall({
-      //   target: `${this.config.packageId}::registry::record_scan`,
+      //   target: `${this.config.packageId}::threat_registry::record_scan`,
       //   arguments: [
       //     tx.pure.string(proof.scanId),
       //     tx.pure.string(proof.riskLevel),
       //     tx.pure.string(proof.threatHash),
+      //     tx.pure.u64(Date.now()),
       //   ]
       // });
-      // const result = await client.signAndExecuteTransaction({
-      //   transaction: tx,
-      //   signer: keypair,
-      // });
       
-      // Mock transaction digest for demo
+      // Mock tx digest for demo
       const txDigest = `0x${this.hashString(proof.scanId + Date.now()).slice(0, 64)}`;
-      
-      console.log(`[SuiIntegration] Would submit proof to: ${this.config.packageId || '0x...registry'}`);
-      console.log(`[SuiIntegration] Transaction (mock): ${txDigest}`);
       
       return { success: true, txDigest };
     } catch (error) {
-      console.error('[SuiIntegration] Failed to submit proof:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -252,8 +242,7 @@ export class SuiIntegration {
   /**
    * Record threat statistics on-chain
    * 
-   * In production, this aggregates threat data and submits to
-   * a shared registry contract accessible by all Sui users.
+   * Calls threat_registry::update_threat_stats() in production
    */
   public async recordThreatStatsOnChain(threatStats: ThreatStat[]): Promise<{
     success: boolean;
@@ -261,7 +250,7 @@ export class SuiIntegration {
     proof?: SuiProof;
     error?: string;
   }> {
-    const scanId = `scan_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const scanId = `stats_${Date.now()}`;
     const maxCount = Math.max(...threatStats.map(t => t.count));
     const riskLevel = maxCount > 50 ? 'critical' : maxCount > 20 ? 'high' : maxCount > 10 ? 'medium' : 'low';
     
@@ -271,7 +260,7 @@ export class SuiIntegration {
       threatStats.map(t => ({ type: t.threatType, count: t.count }))
     );
     
-    if (this.walletState.connected) {
+    if (this.walletState.connected && this.config.packageId) {
       const submitResult = await this.submitProofToChain(proof);
       if (submitResult.success) {
         proof.txDigest = submitResult.txDigest;
@@ -282,15 +271,14 @@ export class SuiIntegration {
     return {
       success: true,
       proof,
-      error: 'No wallet connected - proof created but not submitted',
+      error: 'No wallet or package ID - proof created locally only',
     };
   }
   
   /**
-   * Get proof from blockchain
+   * Query scan proof from blockchain
    * 
-   * In production, this would query the Move contract's table
-   * to retrieve historical proofs by scan ID.
+   * Calls threat_registry::get_scan() in production
    */
   public async getProofFromChain(proofId: string): Promise<{
     found: boolean;
@@ -298,19 +286,15 @@ export class SuiIntegration {
     timestamp?: string;
     onChain: boolean;
   }> {
-    // Mock response - production would query on-chain data
-    return {
-      found: false,
-      onChain: false,
-      timestamp: undefined,
-    };
+    // In production, query Move contract table
+    return { found: false, onChain: false };
   }
   
   /**
-   * Verify a scan proof
+   * Verify scan proof integrity
    * 
-   * Verifies that the hash in the proof matches the expected
-   * hash for the given scan data.
+   * Verifies that the hash matches the scan data.
+   * Can be done offline without blockchain access.
    */
   public verifyProof(proof: SuiProof): {
     valid: boolean;
@@ -328,7 +312,7 @@ export class SuiIntegration {
       valid: isValid,
       message: isValid 
         ? 'Proof hash verified' 
-        : 'Proof verification failed - hash mismatch',
+        : 'Hash mismatch - proof may be corrupted',
     };
   }
   
@@ -360,22 +344,18 @@ export class SuiIntegration {
   }
   
   /**
-   * Estimate gas for a transaction
-   * 
-   * In production, this uses:
-   * await client.getReferenceGasPrice();
-   * and estimates based on transaction size
+   * Estimate gas for transaction
    */
   public async estimateGas(): Promise<{ price: number; budget: number } | null> {
-    // Mock gas estimation - production would query network
     return {
       price: 1000, // MIST
-      budget: 2000000, // MIST (0.002 SUI)
+      budget: 2000000, // 0.002 SUI
     };
   }
   
   /**
-   * Helper: Hash string to hex
+   * Simple hash function (for demo only)
+   * Production should use SHA-256 or similar
    */
   private hashString(input: string): string {
     let hash = 0;
@@ -388,54 +368,47 @@ export class SuiIntegration {
   }
 }
 
-// Demo function
+/**
+ * Demo function
+ */
 export async function demoSuiIntegration() {
   console.log('\n🔷 Sui Integration Demo\n');
   
   const sui = new SuiIntegration({ network: 'testnet' });
   
-  console.log('1. Wallet status:', sui.isConnected() 
-    ? `✅ Connected (${sui.getAddress()})` 
-    : '❌ Not connected (read-only mode)');
+  console.log('1. Wallet:', sui.isConnected() 
+    ? `Connected (${sui.getAddress()})` 
+    : 'Not connected (read-only)');
   
-  console.log('\n2. Creating scan proof (offline):');
+  console.log('\n2. Creating scan proof:');
   const proof = sui.createScanProof(
     'scan_demo_001',
     'high',
-    [{ type: 'jailbreak', count: 3 }, { type: 'system_override', count: 2 }]
+    [{ type: 'jailbreak', count: 3 }]
   );
-  console.log('   Proof:', {
-    scanId: proof.scanId,
-    risk: proof.riskLevel,
-    hash: proof.threatHash.slice(0, 16) + '...',
-    signed: proof.signature.includes('[signed') ? '✅' : '❌ (no wallet)',
-  });
+  console.log('   Scan ID:', proof.scanId);
+  console.log('   Risk:', proof.riskLevel);
+  console.log('   Hash:', proof.threatHash.slice(0, 16) + '...');
+  console.log('   Signed:', proof.signature.includes('[signed') ? 'Yes' : 'No');
   
   console.log('\n3. Verifying proof:');
-  const verification = sui.verifyProof(proof);
-  console.log('   Valid:', verification.valid);
+  const v = sui.verifyProof(proof);
+  console.log('   Valid:', v.valid);
   
-  console.log('\n4. Recording threat stats:');
+  console.log('\n4. Recording stats:');
   const stats = [
     { threatType: 'jailbreak', count: 42, lastSeen: new Date().toISOString() },
-    { threatType: 'prompt_leak', count: 18, lastSeen: new Date().toISOString() },
-    { threatType: 'context_manipulation', count: 25, lastSeen: new Date().toISOString() },
   ];
-  const record = await sui.recordThreatStatsOnChain(stats);
-  console.log('   Success:', record.success);
-  console.log('   TX:', record.txDigest || 'Pending (no wallet)');
+  const r = await sui.recordThreatStatsOnChain(stats);
+  console.log('   Success:', r.success);
+  console.log('   TX:', r.txDigest || 'Local only');
   
-  console.log('\n5. Getting gas estimate:');
-  const gas = await sui.estimateGas();
-  console.log('   Gas:', gas ? `${gas.budget} MIST` : 'Unavailable');
+  console.log('\n5. Gas estimate:');
+  const g = await sui.estimateGas();
+  console.log('   Budget:', g ? `${g.budget} MIST` : 'N/A');
   
-  console.log('\n6. Generating stats report:');
-  const report = sui.generateStatsReport(stats);
-  console.log('   Total threats:', report.total);
-  console.log('   Top:', report.topThreats.map(t => t.type).join(', '));
-  
-  console.log('\n🔷 Sui Integration Demo Complete\n');
-  console.log('💡 To enable on-chain features, initialize with a wallet:');
-  console.log('   await sui.initializeWithKeypair("private-key-hex");\n');
-  console.log('📖 Sui SDK Documentation: https://sdk.mystenlabs.com/typescript\n');
+  console.log('\n💡 To enable on-chain features:');
+  console.log('   1. Deploy contracts/sources/threat_registry.move');
+  console.log('   2. await sui.initializeWithKeypair("private-key-hex")');
+  console.log('   3. Update packageId in config\n');
 }

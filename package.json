@@ -8,7 +8,9 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "test": "node dist/test.js",
-    "demo": "tsx src/demo.ts"
+    "demo": "tsx src/demo.ts",
+    "sui:build": "cd contracts && sui move build",
+    "sui:test": "cd contracts && sui move test"
   },
   "keywords": [
     "security",
