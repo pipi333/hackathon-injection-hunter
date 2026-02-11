@@ -1,0 +1,51 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="240" fill="#0F172A"/>
+  
+  <!-- 盾牌 -->
+  <path d="M256 60 L420 110 V230 C420 340 256 440 256 440 C256 440 92 340 92 230 V110 L256 60Z" 
+        fill="#1E40AF" stroke="#38BDF8" stroke-width="8"/>
+  
+  <!-- 盾牌内部渐变效果 -->
+  <path d="M256 80 L390 120 V220 C390 310 256 400 256 400 C256 400 122 310 122 220 V120 L256 80Z" 
+        fill="#1E3A8A" opacity="0.5"/>
+  
+  <!-- 扫描网格 -->
+  <g stroke="#38BDF8" stroke-width="2" opacity="0.4">
+    <line x1="130" y1="180" x2="382" y2="180"/>
+    <line x1="122" y1="230" x2="390" y2="230"/>
+    <line x1="115" y1="280" x2="397" y2="280"/>
+    <line x1="160" y1="330" x2="352" y2="330"/>
+    <line x1="200" y1="380" x2="312" y2="380"/>
+  </g>
+  
+  <!-- 注射器主体 -->
+  <rect x="226" y="150" width="60" height="180" rx="10" fill="#DC2626"/>
+  <rect x="241" y="130" width="30" height="30" rx="5" fill="#F1F5F9"/>
+  <rect x="246" y="80" width="20" height="55" rx="3" fill="#F1F5F9"/>
+  <line x1="256" y1="50" x2="256" y2="80" stroke="#94A3B8" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- 注射器刻度 -->
+  <g fill="#F87171">
+    <rect x="250" y="170" width="12" height="6" rx="1"/>
+    <rect x="250" y="200" width="12" height="6" rx="1"/>
+    <rect x="250" y="230" width="12" height="6" rx="1"/>
+    <rect x="250" y="260" width="12" height="6" rx="1"/>
+    <rect x="250" y="290" width="12" height="6" rx="1"/>
+  </g>
+  
+  <!-- 禁止标记 -->
+  <circle cx="380" cy="380" r="50" fill="#7C3AED"/>
+  <line x1="345" y1="345" x2="415" y2="415" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  
+  <!-- 区块链链条装饰 -->
+  <g fill="#A855F7">
+    <ellipse cx="100" cy="380" rx="25" ry="15" transform="rotate(-30 100 380)"/>
+    <ellipse cx="130" cy="410" rx="25" ry="15" transform="rotate(-30 130 410)"/>
+    <ellipse cx="160" cy="380" rx="25" ry="15" transform="rotate(-30 160 380)"/>
+  </g>
+  
+  <!-- 项目名称 -->
+  <text x="256" y="490" text-anchor="middle" font-family="Arial, sans-serif" 
+        font-size="28" font-weight="bold" fill="#38BDF8">INJECTION HUNTER</text>
+</svg>
